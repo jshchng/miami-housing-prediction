@@ -1,0 +1,89 @@
+---
+title: "Miami Housing Price Prediction — Executive Summary"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(gt)
+
+final_fit  <- read_rds("results/final_fit.rds")
+splits     <- read_rds("data/processed/miami_split.rds")
+miami_test <- splits$test
+```
+
+## The Problem
+
+When a homeowner receives an offer on their property, they face a difficult question: is this a fair price? Professional appraisals are costly and slow. This project builds a machine learning model that predicts Miami residential sale prices from observable property features, giving homeowners a fast, data-driven reference point.
+
+## The Data
+
+The dataset covers `r nrow(splits$train) + nrow(splits$test)` residential properties sold in Miami in 2016. Each property is described by 15 features including location (latitude, longitude), distance from the ocean, highway, and city center, land and living area, property age, structural quality rating, and whether the property falls under an aircraft noise zone.
+
+## The Approach
+
+Nine model types were trained and evaluated using 5-fold cross-validation with 3 repeats. Four different feature engineering strategies were tested for each model, producing a comprehensive comparison across model families and preprocessing approaches.
+```{r model-table}
+tribble(
+  ~"Model Family",    ~"Best CV RMSE",  ~"Recipe",
+  "XGBoost",          "0.1440",         "EDA Transformations",
+  "Random Forest",    "0.1540",         "EDA Transformations",
+  "SVM-RBF",          "0.1590",         "EDA Transformations",
+  "MARS",             "0.1640",         "EDA Transformations",
+  "KNN",              "0.2330",         "EDA Transformations",
+  "Linear",           "0.2170",         "Interactions + PCA",
+  "Elastic Net",      "0.2170",         "Interactions + PCA",
+  "Lasso",            "0.2170",         "Interactions + PCA"
+) %>%
+  gt() %>%
+  tab_header(title = "Cross-validation results by model") %>%
+  tab_style(
+    style = cell_fill(color = "#e8f5e9"),
+    locations = cells_body(rows = 1)
+  )
+```
+
+## The Winning Model
+
+XGBoost with EDA-driven feature engineering was the best-performing model. The feature engineering strategy was motivated by exploratory analysis — log-transforming highway distance, applying a square root to special features value, squaring longitude to capture a U-shaped price relationship, and using natural splines for latitude and ocean distance where the relationships were too curved to linearize.
+
+## Test Set Results
+```{r test-results}
+test_preds <- predict(final_fit, new_data = miami_test) %>%
+  bind_cols(miami_test) %>%
+  mutate(
+    sale_prc_actual    = exp(sale_prc_log),
+    sale_prc_predicted = exp(.pred)
+  )
+
+tibble(
+  Metric = c("RMSE (log scale)", "R-squared", "RMSE (dollars)", "MAE (dollars)"),
+  Value  = c(
+    round(rmse_vec(test_preds$sale_prc_log, test_preds$.pred), 4),
+    round(rsq_vec(test_preds$sale_prc_log, test_preds$.pred), 4),
+    scales::dollar(round(rmse_vec(test_preds$sale_prc_actual, test_preds$sale_prc_predicted))),
+    scales::dollar(round(mae_vec(test_preds$sale_prc_actual, test_preds$sale_prc_predicted)))
+  )
+) %>%
+  gt() %>%
+  tab_header(title = "Final model performance on held-out test set")
+```
+
+## Key Findings
+
+The final model explains 93.6% of the variance in Miami home sale prices. On the held-out test set the model's predictions are off by about $42,294 at the median — meaning half of all predictions are within $42,294 of the true sale price. The average error of $89,864 reflects a small number of high-value properties that are difficult to predict accurately.
+
+Location dominates the prediction. Ocean distance, latitude, and longitude are consistently the strongest predictors, reflecting Miami's geography where proximity to the water commands a significant price premium. Structural quality and living area are the next most influential factors.
+
+The EDA-driven feature engineering recipe outperformed automated alternatives across every nonlinear model family, demonstrating that domain-informed transformations add value even when powerful models like XGBoost are used.
+
+## Limitations
+
+The model is trained on 2016 sales data only. Miami real estate prices have changed significantly since then and predictions on current listings would require retraining on recent data. The model also does not account for interior condition, recent renovations, or neighborhood-level factors not captured in the available features.

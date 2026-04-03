@@ -1,0 +1,100 @@
+---
+title: "Data Cleaning"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+---
+```{r setup, include=FALSE}
+library(tidyverse)
+library(skimr)
+library(naniar)
+
+miami_raw <- read_csv("data/raw/miami-housing.csv")
+```
+
+## Raw Data Overview
+```{r raw-overview}
+glimpse(miami_raw)
+```
+
+The raw dataset contains `r nrow(miami_raw)` properties and `r ncol(miami_raw)` columns. Each row represents a single residential property sold in Miami in 2016.
+
+## Column Name Standardization
+```{r clean-names}
+library(janitor)
+
+miami <- miami_raw %>%
+  clean_names() %>%
+  rename(plane_noise = avno60plus) %>%
+  select(-parcelno)
+
+names(miami)
+```
+
+`parcelno` is a unique property identifier with no predictive value and is dropped. `avno60plus` is renamed to `plane_noise` for readability.
+
+## Type Corrections
+```{r type-corrections}
+miami <- miami %>%
+  mutate(
+    plane_noise       = factor(plane_noise),
+    month_sold        = factor(month_sold),
+    structure_quality = factor(structure_quality)
+  )
+
+miami %>%
+  summarise(across(everything(), class)) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "type")
+```
+
+Three variables are stored as integers in the raw data but are categorical in nature. Converting them to factors ensures they are dummy-encoded correctly during preprocessing rather than treated as continuous.
+
+## Missingness Check
+```{r missingness}
+miss_var_summary(miami) %>%
+  filter(n_miss > 0)
+```
+```{r missingness-confirm}
+cat("Total missing values:", sum(is.na(miami)))
+```
+
+No missing values are present. No imputation is needed.
+
+## Outcome Variable Distribution
+```{r outcome-dist}
+p1 <- ggplot(miami, aes(x = sale_prc)) +
+  geom_histogram(bins = 60, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  labs(title = "Original scale", x = "Sale price (USD)", y = "Count")
+
+p2 <- ggplot(miami, aes(x = log(sale_prc))) +
+  geom_histogram(bins = 60, fill = "steelblue", color = "white") +
+  labs(title = "Log scale", x = "log(Sale price)", y = "Count")
+
+library(patchwork)
+p1 + p2 +
+  plot_annotation(title = "Sale price before and after log transformation")
+```
+
+Sale price is heavily right-skewed with a long tail of high-value properties. A log transformation produces an approximately normal distribution, which improves model performance and makes residuals easier to interpret.
+
+## Final Cleaned Data
+```{r final-clean}
+miami <- miami %>%
+  mutate(sale_prc_log = log(sale_prc)) %>%
+  select(-sale_prc)
+
+skim(miami)
+```
+```{r save}
+write_rds(miami, "data/processed/miami_clean.rds")
+cat("✓ miami_clean.rds written to data/processed/\n")
+```
+
+The cleaned dataset contains `r nrow(miami)` rows and `r ncol(miami)` columns, with 3 factor variables, 12 numeric predictors, and the log-transformed outcome variable.

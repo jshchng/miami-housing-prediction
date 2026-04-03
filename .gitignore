@@ -1,0 +1,19 @@
+# Data files
+data/raw/
+data/processed/
+
+# Model tuning results (too large for GitHub)
+results/
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+
+# Quarto cache
+/.quarto/
+*_cache/
+*_files/
+
+# Mac system files
+.DS_Store

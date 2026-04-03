@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.253">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Data Cleaning</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="01_data_cleaning_files/libs/clipboard/clipboard.min.js"></script>
+<script src="01_data_cleaning_files/libs/quarto-html/quarto.js"></script>
+<script src="01_data_cleaning_files/libs/quarto-html/popper.min.js"></script>
+<script src="01_data_cleaning_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="01_data_cleaning_files/libs/quarto-html/anchor.min.js"></script>
+<link href="01_data_cleaning_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="01_data_cleaning_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="01_data_cleaning_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="01_data_cleaning_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="01_data_cleaning_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#raw-data-overview" id="toc-raw-data-overview" class="nav-link active" data-scroll-target="#raw-data-overview">Raw Data Overview</a></li>
+  <li><a href="#column-name-standardization" id="toc-column-name-standardization" class="nav-link" data-scroll-target="#column-name-standardization">Column Name Standardization</a></li>
+  <li><a href="#type-corrections" id="toc-type-corrections" class="nav-link" data-scroll-target="#type-corrections">Type Corrections</a></li>
+  <li><a href="#missingness-check" id="toc-missingness-check" class="nav-link" data-scroll-target="#missingness-check">Missingness Check</a></li>
+  <li><a href="#outcome-variable-distribution" id="toc-outcome-variable-distribution" class="nav-link" data-scroll-target="#outcome-variable-distribution">Outcome Variable Distribution</a></li>
+  <li><a href="#final-cleaned-data" id="toc-final-cleaned-data" class="nav-link" data-scroll-target="#final-cleaned-data">Final Cleaned Data</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Data Cleaning</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="raw-data-overview" class="level2">
+<h2 class="anchored" data-anchor-id="raw-data-overview">Raw Data Overview</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(miami_raw)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 13,932
+Columns: 17
+$ LATITUDE          &lt;dbl&gt; 25.89103, 25.89132, 25.89133, 25.89176, 25.89182, 25…
+$ LONGITUDE         &lt;dbl&gt; -80.16056, -80.15397, -80.15374, -80.15266, -80.1546…
+$ PARCELNO          &lt;dbl&gt; 622280070620, 622280100460, 622280100470, 6222801005…
+$ SALE_PRC          &lt;dbl&gt; 440000, 349000, 800000, 988000, 755000, 630000, 1020…
+$ LND_SQFOOT        &lt;dbl&gt; 9375, 9375, 9375, 12450, 12800, 9900, 10387, 10272, …
+$ TOT_LVG_AREA      &lt;dbl&gt; 1753, 1715, 2276, 2058, 1684, 1531, 1753, 1663, 1493…
+$ SPEC_FEAT_VAL     &lt;dbl&gt; 0, 0, 49206, 10033, 16681, 2978, 23116, 34933, 11668…
+$ RAIL_DIST         &lt;dbl&gt; 2815.9, 4359.1, 4412.9, 4585.0, 4063.4, 2391.4, 3277…
+$ OCEAN_DIST        &lt;dbl&gt; 12811.4, 10648.4, 10574.1, 10156.5, 10836.8, 13017.0…
+$ WATER_DIST        &lt;dbl&gt; 347.6, 337.8, 297.1, 0.0, 326.6, 188.9, 0.0, 10.5, 5…
+$ CNTR_DIST         &lt;dbl&gt; 42815.3, 43504.9, 43530.4, 43797.5, 43599.7, 43135.1…
+$ SUBCNTR_DI        &lt;dbl&gt; 37742.2, 37340.5, 37328.7, 37423.2, 37550.8, 38176.2…
+$ HWY_DIST          &lt;dbl&gt; 15954.9, 18125.0, 18200.5, 18514.4, 17903.4, 15687.2…
+$ age               &lt;dbl&gt; 67, 63, 61, 63, 42, 41, 63, 21, 56, 63, 64, 51, 56, …
+$ avno60plus        &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ month_sold        &lt;dbl&gt; 8, 9, 2, 9, 7, 2, 2, 9, 3, 11, 2, 11, 7, 7, 9, 11, 6…
+$ structure_quality &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 2, 2, 2, 5, 2, 2, 4…</code></pre>
+</div>
+</div>
+<p>The raw dataset contains 13932 properties and 17 columns. Each row represents a single residential property sold in Miami in 2016.</p>
+</section>
+<section id="column-name-standardization" class="level2">
+<h2 class="anchored" data-anchor-id="column-name-standardization">Column Name Standardization</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>miami <span class="ot">&lt;-</span> miami_raw <span class="sc">%&gt;%</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">plane_noise =</span> avno60plus) <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>parcelno)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(miami)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "latitude"          "longitude"         "sale_prc"         
+ [4] "lnd_sqfoot"        "tot_lvg_area"      "spec_feat_val"    
+ [7] "rail_dist"         "ocean_dist"        "water_dist"       
+[10] "cntr_dist"         "subcntr_di"        "hwy_dist"         
+[13] "age"               "plane_noise"       "month_sold"       
+[16] "structure_quality"</code></pre>
+</div>
+</div>
+<p><code>parcelno</code> is a unique property identifier with no predictive value and is dropped. <code>avno60plus</code> is renamed to <code>plane_noise</code> for readability.</p>
+</section>
+<section id="type-corrections" class="level2">
+<h2 class="anchored" data-anchor-id="type-corrections">Type Corrections</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>miami <span class="ot">&lt;-</span> miami <span class="sc">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">plane_noise       =</span> <span class="fu">factor</span>(plane_noise),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">month_sold        =</span> <span class="fu">factor</span>(month_sold),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">structure_quality =</span> <span class="fu">factor</span>(structure_quality)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>miami <span class="sc">%&gt;%</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), class)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"type"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 16 × 2
+   variable          type   
+   &lt;chr&gt;             &lt;chr&gt;  
+ 1 latitude          numeric
+ 2 longitude         numeric
+ 3 sale_prc          numeric
+ 4 lnd_sqfoot        numeric
+ 5 tot_lvg_area      numeric
+ 6 spec_feat_val     numeric
+ 7 rail_dist         numeric
+ 8 ocean_dist        numeric
+ 9 water_dist        numeric
+10 cntr_dist         numeric
+11 subcntr_di        numeric
+12 hwy_dist          numeric
+13 age               numeric
+14 plane_noise       factor 
+15 month_sold        factor 
+16 structure_quality factor </code></pre>
+</div>
+</div>
+<p>Three variables are stored as integers in the raw data but are categorical in nature. Converting them to factors ensures they are dummy-encoded correctly during preprocessing rather than treated as continuous.</p>
+</section>
+<section id="missingness-check" class="level2">
+<h2 class="anchored" data-anchor-id="missingness-check">Missingness Check</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">miss_var_summary</span>(miami) <span class="sc">%&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n_miss <span class="sc">&gt;</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 0 × 3
+# ℹ 3 variables: variable &lt;chr&gt;, n_miss &lt;int&gt;, pct_miss &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Total missing values:"</span>, <span class="fu">sum</span>(<span class="fu">is.na</span>(miami)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Total missing values: 0</code></pre>
+</div>
+</div>
+<p>No missing values are present. No imputation is needed.</p>
+</section>
+<section id="outcome-variable-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="outcome-variable-distribution">Outcome Variable Distribution</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(miami, <span class="fu">aes</span>(<span class="at">x =</span> sale_prc)) <span class="sc">+</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">60</span>, <span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">dollar_format</span>()) <span class="sc">+</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Original scale"</span>, <span class="at">x =</span> <span class="st">"Sale price (USD)"</span>, <span class="at">y =</span> <span class="st">"Count"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(miami, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">log</span>(sale_prc))) <span class="sc">+</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">60</span>, <span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Log scale"</span>, <span class="at">x =</span> <span class="st">"log(Sale price)"</span>, <span class="at">y =</span> <span class="st">"Count"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> p2 <span class="sc">+</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_annotation</span>(<span class="at">title =</span> <span class="st">"Sale price before and after log transformation"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="01_data_cleaning_files/figure-html/outcome-dist-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Sale price is heavily right-skewed with a long tail of high-value properties. A log transformation produces an approximately normal distribution, which improves model performance and makes residuals easier to interpret.</p>
+</section>
+<section id="final-cleaned-data" class="level2">
+<h2 class="anchored" data-anchor-id="final-cleaned-data">Final Cleaned Data</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>miami <span class="ot">&lt;-</span> miami <span class="sc">%&gt;%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sale_prc_log =</span> <span class="fu">log</span>(sale_prc)) <span class="sc">%&gt;%</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>sale_prc)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">skim</span>(miami)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">miami</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of rows</td>
+<td style="text-align: left;">13932</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of columns</td>
+<td style="text-align: left;">16</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">_______________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Column type frequency:</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">factor</td>
+<td style="text-align: left;">3</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">numeric</td>
+<td style="text-align: left;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">________________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Group variables</td>
+<td style="text-align: left;">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 19%">
+<col style="width: 10%">
+<col style="width: 14%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 37%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: left;">ordered</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: left;">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">plane_noise</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">0: 13724, 1: 208</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">month_sold</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: left;">6: 1387, 8: 1275, 5: 1245, 4: 1234</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">structure_quality</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">4: 7625, 2: 4110, 5: 2002, 1: 179</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">p0</th>
+<th style="text-align: right;">p25</th>
+<th style="text-align: right;">p50</th>
+<th style="text-align: right;">p75</th>
+<th style="text-align: right;">p100</th>
+<th style="text-align: left;">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">latitude</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">25.73</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">25.43</td>
+<td style="text-align: right;">25.62</td>
+<td style="text-align: right;">25.73</td>
+<td style="text-align: right;">25.85</td>
+<td style="text-align: right;">25.97</td>
+<td style="text-align: left;">▃▆▇▅▆</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">longitude</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-80.33</td>
+<td style="text-align: right;">0.09</td>
+<td style="text-align: right;">-80.54</td>
+<td style="text-align: right;">-80.40</td>
+<td style="text-align: right;">-80.34</td>
+<td style="text-align: right;">-80.26</td>
+<td style="text-align: right;">-80.12</td>
+<td style="text-align: left;">▁▇▇▅▃</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">lnd_sqfoot</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">8620.88</td>
+<td style="text-align: right;">6070.09</td>
+<td style="text-align: right;">1248.00</td>
+<td style="text-align: right;">5400.00</td>
+<td style="text-align: right;">7500.00</td>
+<td style="text-align: right;">9126.25</td>
+<td style="text-align: right;">57064.00</td>
+<td style="text-align: left;">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">tot_lvg_area</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2058.04</td>
+<td style="text-align: right;">813.54</td>
+<td style="text-align: right;">854.00</td>
+<td style="text-align: right;">1470.00</td>
+<td style="text-align: right;">1877.50</td>
+<td style="text-align: right;">2471.00</td>
+<td style="text-align: right;">6287.00</td>
+<td style="text-align: left;">▇▅▂▁▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">spec_feat_val</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">9562.49</td>
+<td style="text-align: right;">13890.97</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">810.00</td>
+<td style="text-align: right;">2765.50</td>
+<td style="text-align: right;">12352.25</td>
+<td style="text-align: right;">175020.00</td>
+<td style="text-align: left;">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">rail_dist</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">8348.55</td>
+<td style="text-align: right;">6178.03</td>
+<td style="text-align: right;">10.50</td>
+<td style="text-align: right;">3299.45</td>
+<td style="text-align: right;">7106.30</td>
+<td style="text-align: right;">12102.60</td>
+<td style="text-align: right;">29621.50</td>
+<td style="text-align: left;">▇▆▃▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ocean_dist</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">31690.99</td>
+<td style="text-align: right;">17595.08</td>
+<td style="text-align: right;">236.10</td>
+<td style="text-align: right;">18079.35</td>
+<td style="text-align: right;">28541.75</td>
+<td style="text-align: right;">44310.65</td>
+<td style="text-align: right;">75744.90</td>
+<td style="text-align: left;">▅▇▅▃▂</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">water_dist</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">11960.29</td>
+<td style="text-align: right;">11932.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">2675.85</td>
+<td style="text-align: right;">6922.60</td>
+<td style="text-align: right;">19200.00</td>
+<td style="text-align: right;">50399.80</td>
+<td style="text-align: left;">▇▂▂▁▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cntr_dist</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">68490.33</td>
+<td style="text-align: right;">32008.47</td>
+<td style="text-align: right;">3825.60</td>
+<td style="text-align: right;">42823.10</td>
+<td style="text-align: right;">65852.40</td>
+<td style="text-align: right;">89358.32</td>
+<td style="text-align: right;">159976.50</td>
+<td style="text-align: left;">▃▇▇▃▂</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">subcntr_di</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">41115.05</td>
+<td style="text-align: right;">22161.83</td>
+<td style="text-align: right;">1462.80</td>
+<td style="text-align: right;">23996.25</td>
+<td style="text-align: right;">41109.90</td>
+<td style="text-align: right;">53949.38</td>
+<td style="text-align: right;">110553.80</td>
+<td style="text-align: left;">▆▇▆▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">hwy_dist</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">7723.77</td>
+<td style="text-align: right;">6068.94</td>
+<td style="text-align: right;">90.20</td>
+<td style="text-align: right;">2998.12</td>
+<td style="text-align: right;">6159.75</td>
+<td style="text-align: right;">10854.20</td>
+<td style="text-align: right;">48167.30</td>
+<td style="text-align: left;">▇▂▁▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">age</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">30.67</td>
+<td style="text-align: right;">21.15</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">14.00</td>
+<td style="text-align: right;">26.00</td>
+<td style="text-align: right;">46.00</td>
+<td style="text-align: right;">96.00</td>
+<td style="text-align: left;">▇▇▃▃▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">sale_prc_log</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">12.71</td>
+<td style="text-align: right;">0.57</td>
+<td style="text-align: right;">11.18</td>
+<td style="text-align: right;">12.37</td>
+<td style="text-align: right;">12.64</td>
+<td style="text-align: right;">12.97</td>
+<td style="text-align: right;">14.79</td>
+<td style="text-align: left;">▁▇▇▂▁</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(miami, <span class="st">"data/processed/miami_clean.rds"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"✓ miami_clean.rds written to data/processed/</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>✓ miami_clean.rds written to data/processed/</code></pre>
+</div>
+</div>
+<p>The cleaned dataset contains 13932 rows and 16 columns, with 3 factor variables, 12 numeric predictors, and the log-transformed outcome variable.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

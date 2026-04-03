@@ -1,0 +1,184 @@
+---
+title: "Model Results & Final Evaluation"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+---
+```{r setup, include=FALSE}
+
+library(tidyverse)
+library(tidymodels)
+library(gt)
+library(vip)
+library(patchwork)
+
+source("R/03_recipes.R")
+source("R/04_helpers.R")
+
+splits      <- read_rds("data/processed/miami_split.rds")
+miami_train <- splits$train
+miami_test  <- splits$test
+folds       <- splits$folds
+```
+
+## Cross-Validation Summary
+```{r cv-summary}
+# Load best result from each model
+results <- tribble(
+  ~model,          ~recipe,        ~file,
+  "XGBoost",       "EDA",          "results/tuning/xgb_eda.rds",
+  "Random Forest", "EDA",          "results/tuning/rf_eda.rds",
+  "SVM-RBF",       "EDA",          "results/tuning/svm_eda.rds",
+  "MARS",          "EDA",          "results/tuning/mars_eda.rds",
+  "Linear",        "Interactions", "results/tuning/lm_interactions.rds",
+  "Elastic Net",   "Interactions", "results/tuning/en_interactions.rds",
+  "Lasso",         "Interactions", "results/tuning/lasso_interactions.rds",
+  "KNN",           "EDA",          "results/tuning/knn_eda.rds"
+)
+
+extract_best_rmse <- function(file) {
+  result <- read_rds(file)
+  best   <- show_best(result, metric = "rmse", n = 1)
+  tibble(mean = best$mean, std_err = best$std_err)
+}
+
+cv_summary <- results %>%
+  mutate(metrics = map(file, extract_best_rmse)) %>%
+  unnest(metrics) %>%
+  select(model, recipe, mean, std_err) %>%
+  arrange(mean)
+
+cv_summary %>%
+  gt() %>%
+  cols_label(
+    model   = "Model",
+    recipe  = "Recipe",
+    mean    = "CV RMSE",
+    std_err = "Std Error"
+  ) %>%
+  fmt_number(columns = c(mean, std_err), decimals = 4) %>%
+  tab_style(
+    style = cell_fill(color = "#e8f5e9"),
+    locations = cells_body(rows = 1)
+  ) %>%
+  tab_header(title = "Cross-Validation RMSE by Model")
+```
+```{r cv-plot}
+cv_summary %>%
+  mutate(model = fct_reorder(model, mean)) %>%
+  ggplot(aes(x = mean, y = model)) +
+  geom_point(size = 3) +
+  geom_errorbarh(
+    aes(xmin = mean - std_err, xmax = mean + std_err),
+    height = 0.2
+  ) +
+  labs(
+    title = "Cross-validated RMSE by model",
+    x     = "RMSE (log scale)",
+    y     = NULL
+  ) +
+  theme_minimal()
+```
+
+## Winning Model: XGBoost + EDA Recipe
+```{r fit-winner}
+xgb_eda_result <- read_rds("results/tuning/xgb_eda.rds")
+
+best_params <- select_best(xgb_eda_result, metric = "rmse")
+
+final_spec <- boost_tree(
+  trees          = best_params$trees,
+  tree_depth     = best_params$tree_depth,
+  learn_rate     = best_params$learn_rate,
+  loss_reduction = best_params$loss_reduction,
+  min_n          = best_params$min_n
+) %>%
+  set_engine("xgboost") %>%
+  set_mode("regression")
+
+final_workflow <- workflow() %>%
+  add_recipe(recipe_eda) %>%
+  add_model(final_spec)
+
+# Fit on full training set
+final_fit <- fit(final_workflow, data = miami_train)
+
+write_rds(final_fit, "results/final_fit.rds")
+message("✓ Final model fit saved.")
+```
+
+## Test Set Evaluation
+```{r test-eval}
+test_preds <- predict(final_fit, new_data = miami_test) %>%
+  bind_cols(miami_test) %>%
+  mutate(
+    sale_prc_actual    = exp(sale_prc_log),
+    sale_prc_predicted = exp(.pred)
+  )
+
+# Metrics on log scale
+log_metrics <- test_preds %>%
+  metrics(truth = sale_prc_log, estimate = .pred) %>%
+  filter(.metric %in% c("rmse", "rsq", "mae"))
+
+# Metrics on dollar scale
+dollar_metrics <- test_preds %>%
+  metrics(truth = sale_prc_actual, estimate = sale_prc_predicted) %>%
+  filter(.metric %in% c("rmse", "mae"))
+
+log_metrics %>%
+  bind_rows(dollar_metrics) %>%
+  gt() %>%
+  cols_label(.metric = "Metric", .estimator = "Type", .estimate = "Value") %>%
+  fmt_number(columns = .estimate, decimals = 4) %>%
+  tab_header(title = "Test Set Performance — XGBoost + EDA Recipe")
+```
+
+## Predicted vs Actual
+```{r pred-vs-actual}
+ggplot(test_preds, aes(x = sale_prc_actual, y = sale_prc_predicted)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_abline(color = "red", linetype = "dashed") +
+  scale_x_continuous(labels = scales::dollar_format()) +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  labs(
+    title = "Predicted vs actual sale price",
+    x     = "Actual price",
+    y     = "Predicted price"
+  ) +
+  theme_minimal()
+```
+
+## Residual Analysis
+```{r residuals}
+test_preds <- test_preds %>%
+  mutate(residual = sale_prc_log - .pred)
+
+p1 <- ggplot(test_preds, aes(x = .pred, y = residual)) +
+  geom_point(alpha = 0.3, size = 0.8) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residuals vs fitted", x = "Fitted (log scale)", y = "Residual") +
+  theme_minimal()
+
+p2 <- ggplot(test_preds, aes(x = residual)) +
+  geom_histogram(bins = 50, fill = "steelblue", color = "white") +
+  labs(title = "Residual distribution", x = "Residual", y = "Count") +
+  theme_minimal()
+
+p1 + p2
+```
+
+## Variable Importance
+```{r vip}
+final_fit %>%
+  extract_fit_parsnip() %>%
+  vip(num_features = 15) +
+  labs(title = "Top 15 predictors — XGBoost feature importance") +
+  theme_minimal()
+```
