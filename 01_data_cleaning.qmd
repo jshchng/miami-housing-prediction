@@ -10,6 +10,7 @@ execute:
   warning: false
   message: false
 ---
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(skimr)
@@ -23,7 +24,7 @@ miami_raw <- read_csv("data/raw/miami-housing.csv")
 glimpse(miami_raw)
 ```
 
-The raw dataset contains `r nrow(miami_raw)` properties and `r ncol(miami_raw)` columns. Each row represents a single residential property sold in Miami in 2016.
+The raw dataset contains `r nrow(miami_raw)` properties and `r ncol(miami_raw)` columns. Each row represents a single residential property sold in Miami in 2016. Variables cover location coordinates, distances to key geographic features, structural characteristics, and the sale price outcome.
 
 ## Column Name Standardization
 ```{r clean-names}
@@ -64,7 +65,7 @@ miss_var_summary(miami) %>%
 cat("Total missing values:", sum(is.na(miami)))
 ```
 
-No missing values are present. No imputation is needed.
+No missing values are present across any variable. No imputation is needed and no rows are dropped, preserving the full dataset of `r nrow(miami_raw)` properties for modeling.
 
 ## Outcome Variable Distribution
 ```{r outcome-dist}
@@ -82,7 +83,7 @@ p1 + p2 +
   plot_annotation(title = "Sale price before and after log transformation")
 ```
 
-Sale price is heavily right-skewed with a long tail of high-value properties. A log transformation produces an approximately normal distribution, which improves model performance and makes residuals easier to interpret.
+Sale price is heavily right-skewed with a long tail of high-value properties. The majority of homes sold between $100,000 and $500,000, but a small number of luxury properties extend well beyond $1 million. A log transformation produces an approximately normal distribution, which stabilizes variance, reduces the influence of extreme values, and improves model performance across all families. All modeling is performed on log sale price; predictions are back-transformed with `exp()` for dollar-scale interpretation.
 
 ## Final Cleaned Data
 ```{r final-clean}
@@ -92,6 +93,9 @@ miami <- miami %>%
 
 skim(miami)
 ```
+
+The skim summary confirms the dataset is ready for modeling. Log sale price ranges from approximately 11 to 14.7, corresponding to roughly $60,000 to $2.4 million on the original scale. No variables show signs of data entry errors or implausible ranges. The three factor variables each have a small number of levels appropriate for dummy encoding.
+
 ```{r save}
 write_rds(miami, "data/processed/miami_clean.rds")
 cat("✓ miami_clean.rds written to data/processed/\n")

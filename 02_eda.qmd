@@ -10,12 +10,15 @@ execute:
   warning: false
   message: false
 ---
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(patchwork)
 
 miami <- read_rds("data/processed/miami_clean.rds")
 ```
+
+This report documents the exploratory analysis that motivated the feature engineering decisions in the EDA recipe. Each section examines the relationship between a predictor and log sale price, identifies nonlinearities or skew, and explains the transformation chosen to address it. The goal was to make informed, interpretable decisions rather than relying on automated transformation strategies alone.
 
 ## Outcome Variable
 ```{r outcome}
@@ -32,6 +35,8 @@ p1 + p2 +
   plot_annotation(title = "Sale price distribution before and after log transformation")
 ```
 
+Sale price on the original scale is strongly right-skewed, with the bulk of properties clustered below $500,000 and a long tail extending toward $2.5 million. The log transformation produces a near-symmetric, approximately normal distribution. All modeling is performed on log sale price and predictions are back-transformed with `exp()` when dollar-scale interpretation is needed.
+
 ## Location Effects
 ```{r location}
 p1 <- ggplot(miami, aes(x = latitude, y = sale_prc_log)) +
@@ -47,7 +52,9 @@ p2 <- ggplot(miami, aes(x = longitude, y = sale_prc_log)) +
 p1 + p2
 ```
 
-The latitude relationship is clearly nonlinear — prices peak in the middle latitudes and drop off at both ends. The longitude relationship shows a U-shape, motivating the `longitude^2` term in the EDA recipe.
+The latitude relationship is clearly nonlinear. Prices peak in the middle latitudes and drop off at both ends, reflecting the concentration of higher-value neighborhoods in central Miami. A single linear term cannot capture this curve, motivating the use of a natural spline with 4 degrees of freedom in the EDA recipe.
+
+The longitude relationship shows a U-shape, with lower prices in the middle longitudes and higher prices toward both extremes. This pattern likely reflects the premium commanded by properties near the coast on either side of the peninsula. Squaring longitude captures this U-shape with a single additional term, which is a more parsimonious solution than a spline for a clean quadratic relationship.
 
 ## Distance Variables
 ```{r distances}
@@ -74,7 +81,9 @@ p4 <- ggplot(miami, aes(x = log(hwy_dist + 1), y = sale_prc_log)) +
 (p1 + p2) / (p3 + p4)
 ```
 
-Log-transforming highway distance straightens the relationship considerably. Ocean distance remains curved even after logging, motivating the natural spline in the EDA recipe.
+Highway distance shows strong right skew on the original scale, with a steeply diminishing relationship that flattens quickly. Log-transforming highway distance straightens this relationship considerably, producing a much more linear pattern. This is the cleanest transformation in the EDA recipe and produces the most consistent improvement across model families.
+
+Ocean distance presents a more complex pattern. Even after log-transforming, the smoothed curve retains meaningful curvature that a linear term cannot adequately capture. This motivates the use of a natural spline with 4 degrees of freedom, which gives the model enough flexibility to follow the nonlinear price gradient as distance from the ocean increases.
 
 ## Special Features Value
 ```{r spec-feat}
@@ -91,7 +100,7 @@ p2 <- ggplot(miami, aes(x = sqrt(spec_feat_val), y = sale_prc_log)) +
 p1 + p2
 ```
 
-The square root transformation reduces the right skew and produces a more linear relationship with log price.
+Special features value is heavily concentrated at zero, with a long right tail for properties that have pools, docks, or other premium amenities. On the original scale the relationship with log price is steep and nonlinear. The square root transformation compresses the tail, reduces skew, and produces a noticeably more linear relationship. A log transformation was considered but performs worse here because of the large number of zero values, which would require an offset and add complexity without improving the fit.
 
 ## Structural Variables
 ```{r structural}
@@ -117,6 +126,8 @@ p4 <- ggplot(miami, aes(x = lnd_sqfoot, y = sale_prc_log)) +
 (p1 + p2) / (p3 + p4)
 ```
 
+Living area has a strong positive relationship with log price, as expected. The relationship is approximately linear on the log scale and does not require additional transformation. Property age shows a nonlinear pattern. Very new and very old properties both command premiums relative to mid-age properties. New construction is valued for modern amenities, while older properties in Miami often reflect historic or architecturally desirable stock. Structure quality shows a clear ordinal gradient with limited overlap between adjacent levels, confirming it is one of the strongest property-level predictors. Land area has a weaker and noisier relationship with price than living area, suggesting that buyers in this market value interior space more than lot size.
+
 ## Correlation Overview
 ```{r correlation}
 miami %>%
@@ -132,3 +143,5 @@ miami %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(title = "Correlation matrix — numeric predictors", x = NULL, y = NULL)
 ```
+
+Ocean distance and water distance are highly correlated, as expected given Miami's coastal geography. Latitude and longitude show moderate correlation with several distance variables, reflecting the city's linear layout along the coast. The distance variables as a group show meaningful multicollinearity, which is expected and handled naturally by tree-based models. For linear models, this multicollinearity contributes to the weaker performance seen in the cross-validation results, as correlated predictors inflate coefficient variance and reduce interpretability. The interactions recipe addresses this by compressing the predictor space with PCA, though the EDA recipe ultimately proves more effective by addressing the nonlinearity directly.

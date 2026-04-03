@@ -3,7 +3,7 @@
   <p>
     <img src="https://img.shields.io/badge/R-4.2+-276DC3?logo=r&logoColor=white" />
     <img src="https://img.shields.io/badge/tidymodels-1.0-4B9CD3" />
-    <img src="https://img.shields.io/badge/XGBoost-winning%20model-FF6600" />
+    <img src="https://img.shields.io/badge/XGBoost-Final%20Model-FF6600" />
     <img src="https://img.shields.io/badge/license-MIT-lightgrey" />
   </p>
   <p align="center"><a href="https://jshchng.github.io/miami-housing-prediction/">📊 View Full Analysis Reports</a></p>

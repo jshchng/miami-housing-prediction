@@ -10,8 +10,8 @@ execute:
   warning: false
   message: false
 ---
-```{r setup, include=FALSE}
 
+```{r setup, include=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(gt)
@@ -28,6 +28,9 @@ folds       <- splits$folds
 ```
 
 ## Cross-Validation Summary
+
+Eight model families were evaluated using 5-fold cross-validation with 3 repeats, stratified on log sale price. Each model was paired with the preprocessing recipe that produced its best performance. RMSE on the log scale is the primary comparison metric throughout.
+
 ```{r cv-summary}
 # Load best result from each model
 results <- tribble(
@@ -86,6 +89,8 @@ cv_summary %>%
   theme_minimal()
 ```
 
+Tree-based models substantially outperform linear and distance-based approaches. The performance gap between XGBoost (0.144) and the best linear model (0.217) is large enough to confirm that the data contains nonlinear structure that coefficients cannot capture. KNN underperforms despite being nonparametric, likely because the distance calculations are sensitive to the high-dimensional, correlated predictor space. The EDA recipe wins or ties for first across every flexible model family. This is the most important finding in this comparison, as it validates the value of domain-informed feature engineering over automated alternatives.
+
 ## Winning Model: XGBoost + EDA Recipe
 ```{r fit-winner}
 xgb_eda_result <- read_rds("results/tuning/xgb_eda.rds")
@@ -112,6 +117,8 @@ final_fit <- fit(final_workflow, data = miami_train)
 write_rds(final_fit, "results/final_fit.rds")
 message("✓ Final model fit saved.")
 ```
+
+The best hyperparameters were selected by minimizing cross-validated RMSE. The final model is trained on the full training set using these parameters before evaluation on the held-out test set. The test set is touched exactly once.
 
 ## Test Set Evaluation
 ```{r test-eval}
@@ -140,6 +147,8 @@ log_metrics %>%
   tab_header(title = "Test Set Performance — XGBoost + EDA Recipe")
 ```
 
+The test RMSE of 0.1415 is close to the cross-validated estimate of 0.1440, confirming that the model generalizes well and that the CV procedure was not optimistic. The model explains 93.6% of variance in log sale price. On the dollar scale, the median absolute error of $42,294 provides the most practically interpretable summary of prediction accuracy.
+
 ## Predicted vs Actual
 ```{r pred-vs-actual}
 ggplot(test_preds, aes(x = sale_prc_actual, y = sale_prc_predicted)) +
@@ -154,6 +163,8 @@ ggplot(test_preds, aes(x = sale_prc_actual, y = sale_prc_predicted)) +
   ) +
   theme_minimal()
 ```
+
+Predictions align closely with actual prices across most of the range. The model performs well for the majority of properties, which fall below $750,000. At the high end, a small number of luxury properties are underpredicted which is a common pattern when training data contains few examples of extreme values and the model has limited information to extrapolate beyond the bulk of the distribution.
 
 ## Residual Analysis
 ```{r residuals}
@@ -174,6 +185,8 @@ p2 <- ggplot(test_preds, aes(x = residual)) +
 p1 + p2
 ```
 
+Residuals are approximately centered at zero with no strong systematic pattern against fitted values, indicating the model is not consistently over or underpredicting at any price level. The distribution is approximately normal with a slight right skew, driven by the same high-value outliers visible in the predicted vs actual plot. The absence of a funnel shape or nonlinear pattern in the residuals vs fitted plot confirms that the log transformation of the outcome was appropriate and that variance is reasonably stable across the prediction range.
+
 ## Variable Importance
 ```{r vip}
 final_fit %>%
@@ -182,3 +195,5 @@ final_fit %>%
   labs(title = "Top 15 predictors — XGBoost feature importance") +
   theme_minimal()
 ```
+
+Ocean distance is the dominant predictor by a wide margin, consistent with Miami's geography where waterfront proximity commands a significant price premium. Latitude and longitude rank highly, capturing neighborhood-level price variation that distance variables alone cannot fully explain. Structural quality and living area are the strongest property-level predictors, confirming that buyers weigh both location and physical characteristics heavily. Highway distance and property age contribute more modest but meaningful signal. The prominence of the EDA-engineered features, including the log-transformed highway distance and natural spline terms for latitude and ocean distance, in the top predictors validates the feature engineering approach taken in this project.

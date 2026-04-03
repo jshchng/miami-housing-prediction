@@ -9,6 +9,7 @@ execute:
   warning: false
   message: false
 ---
+
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(tidymodels)
@@ -29,7 +30,8 @@ The dataset covers `r nrow(splits$train) + nrow(splits$test)` residential proper
 
 ## The Approach
 
-Nine model types were trained and evaluated using 5-fold cross-validation with 3 repeats. Four different feature engineering strategies were tested for each model, producing a comprehensive comparison across model families and preprocessing approaches.
+Eight model types were trained and evaluated using 5-fold cross-validation with 3 repeats. Four different feature engineering strategies were tested for each model, producing a comprehensive comparison across model families and preprocessing approaches.
+
 ```{r model-table}
 tribble(
   ~"Model Family",    ~"Best CV RMSE",  ~"Recipe",
@@ -52,7 +54,7 @@ tribble(
 
 ## The Winning Model
 
-XGBoost with EDA-driven feature engineering was the best-performing model. The feature engineering strategy was motivated by exploratory analysis — log-transforming highway distance, applying a square root to special features value, squaring longitude to capture a U-shaped price relationship, and using natural splines for latitude and ocean distance where the relationships were too curved to linearize.
+XGBoost with EDA-driven feature engineering was the best-performing model. The feature engineering strategy was motivated by exploratory analysis, including log-transforming highway distance, applying a square root to special features value, squaring longitude to capture a U-shaped price relationship, and using natural splines for latitude and ocean distance where the relationships were too curved to linearize.
 
 ## Test Set Results
 ```{r test-results}
@@ -78,12 +80,12 @@ tibble(
 
 ## Key Findings
 
-The final model explains 93.6% of the variance in Miami home sale prices. On the held-out test set the model's predictions are off by about $42,294 at the median — meaning half of all predictions are within $42,294 of the true sale price. The average error of $89,864 reflects a small number of high-value properties that are difficult to predict accurately.
+The final model explains 93.6% of the variance in Miami home sale prices. On the held-out test set the model's predictions are off by about $42,294 at the median, meaning half of all predictions are within $42,294 of the true sale price. The average error of $89,864 reflects a small number of high-value properties that are difficult to predict accurately, a common limitation when luxury properties are underrepresented in training data.
 
-Location dominates the prediction. Ocean distance, latitude, and longitude are consistently the strongest predictors, reflecting Miami's geography where proximity to the water commands a significant price premium. Structural quality and living area are the next most influential factors.
+Location dominates the prediction. Ocean distance, latitude, and longitude are consistently the strongest predictors, reflecting Miami's geography where proximity to the water commands a significant price premium. Structural quality and living area are the next most influential factors, confirming that buyers weigh both location and physical characteristics heavily.
 
-The EDA-driven feature engineering recipe outperformed automated alternatives across every nonlinear model family, demonstrating that domain-informed transformations add value even when powerful models like XGBoost are used.
+The EDA-driven feature engineering recipe outperformed automated alternatives across every nonlinear model family. This finding demonstrates that domain-informed transformations add measurable value even when powerful models like XGBoost are available, and that investing time in exploratory analysis before modeling pays off in final performance.
 
 ## Limitations
 
-The model is trained on 2016 sales data only. Miami real estate prices have changed significantly since then and predictions on current listings would require retraining on recent data. The model also does not account for interior condition, recent renovations, or neighborhood-level factors not captured in the available features.
+The model is trained on 2016 sales data only. Miami real estate prices have changed significantly since then and predictions on current listings would require retraining on recent data. The model also does not account for interior condition, recent renovations, or neighborhood-level factors not captured in the available features. Predictions for luxury properties above $1 million should be interpreted with additional caution given the limited representation of this segment in the training data.
