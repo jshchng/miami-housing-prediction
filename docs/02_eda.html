@@ -136,6 +136,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
+<p>This report documents the exploratory analysis that motivated the feature engineering decisions in the EDA recipe. Each section examines the relationship between a predictor and log sale price, identifies nonlinearities or skew, and explains the transformation chosen to address it. The goal was to make informed, interpretable decisions rather than relying on automated transformation strategies alone.</p>
 <section id="outcome-variable" class="level2">
 <h2 class="anchored" data-anchor-id="outcome-variable">Outcome Variable</h2>
 <div class="cell">
@@ -157,6 +158,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/outcome-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>Sale price on the original scale is strongly right-skewed, with the bulk of properties clustered below $500,000 and a long tail extending toward $2.5 million. The log transformation produces a near-symmetric, approximately normal distribution. All modeling is performed on log sale price and predictions are back-transformed with <code>exp()</code> when dollar-scale interpretation is needed.</p>
 </section>
 <section id="location-effects" class="level2">
 <h2 class="anchored" data-anchor-id="location-effects">Location Effects</h2>
@@ -179,7 +181,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/location-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>The latitude relationship is clearly nonlinear — prices peak in the middle latitudes and drop off at both ends. The longitude relationship shows a U-shape, motivating the <code>longitude^2</code> term in the EDA recipe.</p>
+<p>The latitude relationship is clearly nonlinear. Prices peak in the middle latitudes and drop off at both ends, reflecting the concentration of higher-value neighborhoods in central Miami. A single linear term cannot capture this curve, motivating the use of a natural spline with 4 degrees of freedom in the EDA recipe.</p>
+<p>The longitude relationship shows a U-shape, with lower prices in the middle longitudes and higher prices toward both extremes. This pattern likely reflects the premium commanded by properties near the coast on either side of the peninsula. Squaring longitude captures this U-shape with a single additional term, which is a more parsimonious solution than a spline for a clean quadratic relationship.</p>
 </section>
 <section id="distance-variables" class="level2">
 <h2 class="anchored" data-anchor-id="distance-variables">Distance Variables</h2>
@@ -212,7 +215,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/distances-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>Log-transforming highway distance straightens the relationship considerably. Ocean distance remains curved even after logging, motivating the natural spline in the EDA recipe.</p>
+<p>Highway distance shows strong right skew on the original scale, with a steeply diminishing relationship that flattens quickly. Log-transforming highway distance straightens this relationship considerably, producing a much more linear pattern. This is the cleanest transformation in the EDA recipe and produces the most consistent improvement across model families.</p>
+<p>Ocean distance presents a more complex pattern. Even after log-transforming, the smoothed curve retains meaningful curvature that a linear term cannot adequately capture. This motivates the use of a natural spline with 4 degrees of freedom, which gives the model enough flexibility to follow the nonlinear price gradient as distance from the ocean increases.</p>
 </section>
 <section id="special-features-value" class="level2">
 <h2 class="anchored" data-anchor-id="special-features-value">Special Features Value</h2>
@@ -235,7 +239,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/spec-feat-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>The square root transformation reduces the right skew and produces a more linear relationship with log price.</p>
+<p>Special features value is heavily concentrated at zero, with a long right tail for properties that have pools, docks, or other premium amenities. On the original scale the relationship with log price is steep and nonlinear. The square root transformation compresses the tail, reduces skew, and produces a noticeably more linear relationship. A log transformation was considered but performs worse here because of the large number of zero values, which would require an offset and add complexity without improving the fit.</p>
 </section>
 <section id="structural-variables" class="level2">
 <h2 class="anchored" data-anchor-id="structural-variables">Structural Variables</h2>
@@ -267,6 +271,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/structural-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>Living area has a strong positive relationship with log price, as expected. The relationship is approximately linear on the log scale and does not require additional transformation. Property age shows a nonlinear pattern. Very new and very old properties both command premiums relative to mid-age properties. New construction is valued for modern amenities, while older properties in Miami often reflect historic or architecturally desirable stock. Structure quality shows a clear ordinal gradient with limited overlap between adjacent levels, confirming it is one of the strongest property-level predictors. Land area has a weaker and noisier relationship with price than living area, suggesting that buyers in this market value interior space more than lot size.</p>
 </section>
 <section id="correlation-overview" class="level2">
 <h2 class="anchored" data-anchor-id="correlation-overview">Correlation Overview</h2>
@@ -290,6 +295,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p><img src="02_eda_files/figure-html/correlation-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+<p>Ocean distance and water distance are highly correlated, as expected given Miami’s coastal geography. Latitude and longitude show moderate correlation with several distance variables, reflecting the city’s linear layout along the coast. The distance variables as a group show meaningful multicollinearity, which is expected and handled naturally by tree-based models. For linear models, this multicollinearity contributes to the weaker performance seen in the cross-validation results, as correlated predictors inflate coefficient variance and reduce interpretability. The interactions recipe addresses this by compressing the predictor space with PCA, though the EDA recipe ultimately proves more effective by addressing the nonlinearity directly.</p>
 </section>
 
 </main>

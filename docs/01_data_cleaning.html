@@ -165,7 +165,7 @@ $ month_sold        &lt;dbl&gt; 8, 9, 2, 9, 7, 2, 2, 9, 3, 11, 2, 11, 7, 7, 9, 1
 $ structure_quality &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 2, 2, 2, 5, 2, 2, 4…</code></pre>
 </div>
 </div>
-<p>The raw dataset contains 13932 properties and 17 columns. Each row represents a single residential property sold in Miami in 2016.</p>
+<p>The raw dataset contains 13932 properties and 17 columns. Each row represents a single residential property sold in Miami in 2016. Variables cover location coordinates, distances to key geographic features, structural characteristics, and the sale price outcome.</p>
 </section>
 <section id="column-name-standardization" class="level2">
 <h2 class="anchored" data-anchor-id="column-name-standardization">Column Name Standardization</h2>
@@ -254,7 +254,7 @@ $ structure_quality &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 2, 2, 2, 5, 2, 
 <pre><code>Total missing values: 0</code></pre>
 </div>
 </div>
-<p>No missing values are present. No imputation is needed.</p>
+<p>No missing values are present across any variable. No imputation is needed and no rows are dropped, preserving the full dataset of 13932 properties for modeling.</p>
 </section>
 <section id="outcome-variable-distribution" class="level2">
 <h2 class="anchored" data-anchor-id="outcome-variable-distribution">Outcome Variable Distribution</h2>
@@ -278,7 +278,7 @@ $ structure_quality &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 2, 2, 2, 5, 2, 
 <p><img src="01_data_cleaning_files/figure-html/outcome-dist-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>Sale price is heavily right-skewed with a long tail of high-value properties. A log transformation produces an approximately normal distribution, which improves model performance and makes residuals easier to interpret.</p>
+<p>Sale price is heavily right-skewed with a long tail of high-value properties. The majority of homes sold between $100,000 and $500,000, but a small number of luxury properties extend well beyond $1 million. A log transformation produces an approximately normal distribution, which stabilizes variance, reduces the influence of extreme values, and improves model performance across all families. All modeling is performed on log sale price; predictions are back-transformed with <code>exp()</code> for dollar-scale interpretation.</p>
 </section>
 <section id="final-cleaned-data" class="level2">
 <h2 class="anchored" data-anchor-id="final-cleaned-data">Final Cleaned Data</h2>
@@ -584,6 +584,7 @@ $ structure_quality &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 2, 2, 2, 5, 2, 
 </table>
 </div>
 </div>
+<p>The skim summary confirms the dataset is ready for modeling. Log sale price ranges from approximately 11 to 14.7, corresponding to roughly $60,000 to $2.4 million on the original scale. No variables show signs of data entry errors or implausible ranges. The three factor variables each have a small number of levels appropriate for dummy encoding.</p>
 <div class="cell">
 <details>
 <summary>Code</summary>
